@@ -1,0 +1,200 @@
+/* ============================================================
+   UrbanCart Power BI — DAX Measures
+   Organized by page. Naming convention: page-prefixed
+   (Merch, CX) to prevent cross-page field ambiguity; Executive
+   and Marketing measures kept unprefixed as originally built.
+   ============================================================ */
+
+-- ================= EXECUTIVE PAGE =================
+
+Total Revenue = 
+CALCULATE(
+    SUM(vw_fact_orders[order_total]),
+    vw_fact_orders[order_status] <> "Cancelled"
+)
+
+Total Orders = 
+CALCULATE(
+    DISTINCTCOUNT(vw_fact_orders[order_id]),
+    vw_fact_orders[order_status] <> "Cancelled"
+)
+
+AOV = DIVIDE([Total Revenue], [Total Orders])
+
+Revenue PY = 
+CALCULATE([Total Revenue], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+
+Revenue YoY % = 
+DIVIDE([Total Revenue] - [Revenue PY], [Revenue PY])
+
+Revenue 3M Avg = 
+AVERAGEX(
+    DATESINPERIOD(vw_dim_date[Date], MAX(vw_dim_date[Date]), -3, MONTH),
+    [Total Revenue]
+)
+
+-- Data quality disclosure measure (see README Data Quality section)
+Unattributed Revenue = 
+CALCULATE([Total Revenue], vw_dim_customers[customer_id] = "UNKNOWN")
+
+Unattributed Revenue % = DIVIDE([Unattributed Revenue], [Total Revenue])
+
+Customer Revenue Rank = RANKX(ALL(vw_dim_customers[customer_id]), [Total Revenue], , DESC)
+
+Customer Growth % = 
+VAR CurrRevenue = CALCULATE([Total Revenue], vw_fact_orders[order_status] <> "Cancelled")
+VAR PYRevenue = CALCULATE([Total Revenue], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+RETURN DIVIDE(CurrRevenue - PYRevenue, PYRevenue)
+
+
+-- ================= MARKETING PAGE =================
+
+Total Spend = SUM(vw_fact_marketing_campaigns[budget_usd])
+
+Customers Acquired = DISTINCTCOUNT(vw_dim_customers[customer_id])
+
+Blended CAC = DIVIDE([Total Spend], [Customers Acquired])
+
+Blended ROAS = DIVIDE([Total Revenue], [Total Spend])
+-- NOTE: Blended CAC/ROAS must be used (not per-row CAC/ROAS averaged) for any
+-- Total row — averaging a ratio across channels is mathematically wrong.
+-- This measure recalculates the ratio fresh from summed totals at any grain.
+
+Total Sessions = SUM(vw_fact_website_traffic[sessions])
+
+Conversion Rate = DIVIDE([Total Orders], [Total Sessions])
+
+Avg Bounce Rate = AVERAGE(vw_fact_website_traffic[bounce_rate])
+
+CAC PY = CALCULATE([Blended CAC], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+ROAS PY = CALCULATE([Blended ROAS], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+Total Sessions PY = CALCULATE([Total Sessions], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+Conversion Rate PY = CALCULATE([Conversion Rate], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+-- Direction note: CAC is "lower is better" — reverse the KPI color direction
+-- so a decrease shows green, not the default green-on-increase.
+
+
+-- ================= MERCHANDISING PAGE =================
+-- All Merch measures apply the same order_status filter consistently —
+-- numerator/denominator status-filter mismatches were the #1 source of
+-- bugs on this page during build (see README Data Quality / build notes).
+
+Merch Revenue = 
+CALCULATE(
+    SUM(vw_fact_order_items[line_total]),
+    vw_fact_orders[order_status] NOT IN {"Cancelled", "Returned"}
+)
+
+Merch Cost = 
+CALCULATE(
+    SUMX(vw_fact_order_items, vw_fact_order_items[quantity] * RELATED(vw_dim_products[cost_price])),
+    vw_fact_orders[order_status] NOT IN {"Cancelled", "Returned"}
+)
+
+Merch Gross Profit = [Merch Revenue] - [Merch Cost]
+
+Merch Margin % = DIVIDE([Merch Gross Profit], [Merch Revenue])
+
+Merch Gross Revenue Before Discount = 
+CALCULATE(
+    SUMX(vw_fact_order_items, vw_fact_order_items[quantity] * RELATED(vw_dim_products[list_price])),
+    vw_fact_orders[order_status] NOT IN {"Cancelled", "Returned"}
+)
+
+Merch Discount Amount = [Merch Gross Revenue Before Discount] - [Merch Revenue]
+
+Merch Discount % of Gross = DIVIDE([Merch Discount Amount], [Merch Gross Revenue Before Discount])
+
+Merch AOV Coupon Used = 
+CALCULATE([AOV], vw_fact_orders[coupon_code] <> "No Coupon", vw_fact_orders[coupon_code] <> BLANK())
+
+Merch AOV No Coupon = 
+CALCULATE([AOV], vw_fact_orders[coupon_code] = "No Coupon" || ISBLANK(vw_fact_orders[coupon_code]))
+
+Merch Revenue Rank = RANKX(ALL(vw_dim_products[product_id]), [Merch Revenue], , DESC)
+Merch Profit Rank = RANKX(ALL(vw_dim_products[product_id]), [Merch Gross Profit], , DESC)
+Merch Rank Gap = [Merch Revenue Rank] - [Merch Profit Rank]
+
+Merch Revenue PY = CALCULATE([Merch Revenue], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+Merch Gross Profit PY = CALCULATE([Merch Gross Profit], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+Merch Margin % PY = CALCULATE([Merch Margin %], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+Merch Discount % PY = CALCULATE([Merch Discount % of Gross], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+-- Direction note: Discount % of Gross is "lower is better" — reverse KPI color direction.
+
+
+-- ================= SUPPORT (CX) PAGE =================
+
+CX Cancellation Rate = 
+DIVIDE(
+    CALCULATE(COUNTROWS(vw_fact_orders), vw_fact_orders[order_status] = "Cancelled"),
+    COUNTROWS(vw_fact_orders)
+)
+
+CX Return Rate = 
+DIVIDE(
+    CALCULATE(COUNTROWS(vw_fact_orders), vw_fact_orders[order_status] = "Returned"),
+    COUNTROWS(vw_fact_orders)
+)
+
+CX Cancel + Return Rate = [CX Cancellation Rate] + [CX Return Rate]
+
+CX Total Tickets = COUNTROWS(vw_fact_support_tickets)
+
+CX Avg Satisfaction = AVERAGE(vw_fact_support_tickets[satisfaction_score])
+
+CX Avg Resolution Days = 
+AVERAGEX(
+    vw_fact_support_tickets,
+    DATEDIFF(vw_fact_support_tickets[opened_date], vw_fact_support_tickets[resolved_date], DAY)
+)
+
+CX Ticket Rate = DIVIDE([CX Total Tickets], COUNTROWS(vw_fact_orders))
+
+-- Delivery-bucket-filtered measures: vw_fact_orders -> vw_fact_support_tickets
+-- via order_id is an INACTIVE relationship in the model (avoids an ambiguous
+-- path with vw_dim_date). USERELATIONSHIP activates it just for these two.
+CX Total Tickets (Delivery Filtered) = 
+CALCULATE(
+    COUNTROWS(vw_fact_support_tickets),
+    USERELATIONSHIP(vw_fact_orders[order_id], vw_fact_support_tickets[order_id])
+)
+
+CX Avg Satisfaction (Delivery Filtered) = 
+CALCULATE(
+    AVERAGE(vw_fact_support_tickets[satisfaction_score]),
+    USERELATIONSHIP(vw_fact_orders[order_id], vw_fact_support_tickets[order_id])
+)
+
+CX Ticket Rate (Delivery Filtered) = 
+DIVIDE([CX Total Tickets (Delivery Filtered)], COUNTROWS(vw_fact_orders))
+
+CX Cancel + Return Rate PY = CALCULATE([CX Cancel + Return Rate], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+CX Total Tickets PY = CALCULATE([CX Total Tickets], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+CX Avg Satisfaction PY = CALCULATE([CX Avg Satisfaction], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+CX Avg Resolution Days PY = CALCULATE([CX Avg Resolution Days], SAMEPERIODLASTYEAR(vw_dim_date[Date]))
+-- Direction note: Cancel+Return Rate and Avg Resolution Days are "lower is better".
+
+
+-- ================= CALCULATED COLUMNS =================
+
+-- vw_fact_orders — delivery time bucketing for the Support page chart
+Delivery Bucket = 
+SWITCH(
+    TRUE(),
+    vw_fact_orders[delivery_days] <= 2, "0-2 days",
+    vw_fact_orders[delivery_days] <= 4, "3-4 days",
+    vw_fact_orders[delivery_days] <= 7, "5-7 days",
+    vw_fact_orders[delivery_days] <= 10, "8-10 days",
+    "11+ days"
+)
+
+Delivery Bucket Sort = 
+SWITCH(
+    TRUE(),
+    vw_fact_orders[delivery_days] <= 2, 1,
+    vw_fact_orders[delivery_days] <= 4, 2,
+    vw_fact_orders[delivery_days] <= 7, 3,
+    vw_fact_orders[delivery_days] <= 10, 4,
+    5
+)
+-- Set via Column Tools -> Sort by Column -> Delivery Bucket Sort
