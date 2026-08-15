@@ -1,18 +1,22 @@
+<div align="center">
+  <img width="320px" src="https://github.com/user-attachments/assets/2c1489c5-b2a9-47f9-9759-6f206ef6e078" />
+</div>
+
 # Project Background
 
 UrbanCart is a mid-sized global online marketplace selling across seven categories, shipping to 10 countries and serving roughly 8,000 active customer accounts. After two years of rapid growth — new categories, new markets, a growing marketing budget — leadership lost a single trusted source of truth: teams were making decisions off gut feel and conflicting spreadsheets, and no one had connected the dots between marketing spend, product performance, delivery experience, and profit.
 
 As the incoming Data Analyst, four functional leaders each brought one open question. The engagement scope was intentionally limited to these four questions — clean the underlying data, answer each with SQL, build a self-serve Power BI reporting layer, and summarize findings with prioritized, evidence-backed recommendations.
 
-The full business brief and stakeholder quotes are available [here](./report/UrbanCart_Business_Story_and_Questions.docx).
+The full business brief and stakeholder quotes are available [here](report/UrbanCart_Business_Story_and_Questions.docx).
 
-The SQL used to clean, dedupe, and model the seven raw exports into a star schema can be found [here](./sql/01_cleaning_and_modeling.sql).
+The SQL used to clean, dedupe, and model the seven raw exports into a star schema can be found [here](sql/01_cleaning_and_modeling.sql).
 
-The business-question SQL, organized by stakeholder, can be found [here](./sql/02_business_questions.sql).
+The business-question SQL, organized by stakeholder, can be found [here](sql/02_business_questions.sql).
 
-The full set of Power BI DAX measures, organized by dashboard page, can be found [here](./dax/measures.dax).
+The full set of Power BI DAX measures, organized by dashboard page, can be found [here](dax/measures.dax).
 
-The full written report — executive summary, per-stakeholder findings, data quality disclosures, and prioritized recommendations — is available [here](./report/UrbanCart_Final_Report.docx).
+The full written report — executive summary, per-stakeholder findings, data quality disclosures, and prioritized recommendations — is available [here](report/UrbanCart_Final_Report.docx).
 
 <br>
 
