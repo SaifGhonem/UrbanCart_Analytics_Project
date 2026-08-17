@@ -18,7 +18,7 @@ The full set of Power BI DAX measures, organized by dashboard page, can be found
 
 The full written report — executive summary, per-stakeholder findings, data quality disclosures, and prioritized recommendations — is available [here](report/UrbanCart_Final_Report.docx).
 
-The interactive Power BI dashboard, including all visualizations, KPIs, filters, and stakeholder-focused analysis, is available [here]([YOUR_LIVE_DASHBOARD_LINK](https://app.powerbi.com/view?r=eyJrIjoiZDk4MTZkMDMtZGY2MC00NTI2LWJhNWUtNGRjMjhmNzA3ZmJjIiwidCI6IjJiYjZlNWJjLWMxMDktNDdmYi05NDMzLWMxYzZmNGZhMzNmZiIsImMiOjl9&pageName=87da563cc714ee38dad6)).
+The interactive Power BI dashboard, including all visualizations, KPIs, filters, and stakeholder-focused analysis, is available  [here](https://app.powerbi.com/view?r=eyJrIjoiZDk4MTZkMDMtZGY2MC00NTI2LWJhNWUtNGRjMjhmNzA3ZmJjIiwidCI6IjJiYjZlNWJjLWMxMDktNDdmYi05NDMzLWMxYzZmNGZhMzNmZiIsImMiOjl9&pageName=87da563cc714ee38dad6).
 
 <br>
 
